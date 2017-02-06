@@ -107,7 +107,7 @@ func (g *genericScheduler) Schedule(pod *v1.Pod, nodeLister algorithm.NodeLister
 	// TODO(harryz) Check if equivalenceCache is enabled and call scheduleWithEquivalenceClass here
 
 	trace.Step("Computing predicates")
-	filteredNodes, podAnnotations, failedPredicateMap, err := findNodesThatFit(pod, g.cachedNodeInfoMap, nodes, g.predicates, g.extenders, g.predicateMetaProducer)
+	filteredNodes, failedPredicateMap, podAnnotations, err := findNodesThatFit(pod, g.cachedNodeInfoMap, nodes, g.predicates, g.extenders, g.predicateMetaProducer)
 	if err != nil {
 		return "", nil, err
 	}
@@ -162,7 +162,7 @@ func findNodesThatFit(
 	predicateFuncs map[string]algorithm.FitPredicate,
 	extenders []algorithm.SchedulerExtender,
 	metadataProducer algorithm.MetadataProducer,
-) ([]*v1.Node, *schedulerapi.Annotations, FailedPredicateMap, error) {
+) ([]*v1.Node, FailedPredicateMap, *schedulerapi.Annotations, error) {
 	var filtered []*v1.Node
 	var podAnnotations *schedulerapi.Annotations
 	failedPredicateMap := FailedPredicateMap{}
@@ -199,15 +199,15 @@ func findNodesThatFit(
 		workqueue.Parallelize(16, len(nodes), checkNode)
 		filtered = filtered[:filteredLen]
 		if len(errs) > 0 {
-			return []*v1.Node{}, nil, FailedPredicateMap{}, errors.NewAggregate(errs)
+			return []*v1.Node{}, FailedPredicateMap{}, nil, errors.NewAggregate(errs)
 		}
 	}
 
 	if len(filtered) > 0 && len(extenders) != 0 {
 		for _, extender := range extenders {
-			filteredList, annotations, failedMap, err := extender.Filter(pod, filtered, nodeNameToInfo)
+			filteredList, failedMap, annotations, err := extender.Filter(pod, filtered, nodeNameToInfo)
 			if err != nil {
-				return []*v1.Node{}, nil, FailedPredicateMap{}, err
+				return []*v1.Node{}, FailedPredicateMap{}, nil, err
 			}
 
 			for failedNodeName, failedMsg := range failedMap {
@@ -223,7 +223,7 @@ func findNodesThatFit(
 			}
 		}
 	}
-	return filtered, podAnnotations, failedPredicateMap, nil
+	return filtered, failedPredicateMap, podAnnotations, nil
 }
 
 // Checks whether node with a given name and NodeInfo satisfies all predicateFuncs.

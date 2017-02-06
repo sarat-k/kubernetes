@@ -29,7 +29,7 @@ type SchedulerExtender interface {
 	// Filter based on extender-implemented predicate functions. The filtered list is
 	// expected to be a subset of the supplied list. failedNodesMap optionally contains
 	// the list of failed nodes and failure reasons.
-	Filter(pod *v1.Pod, nodes []*v1.Node, nodeNameToInfo map[string]*schedulercache.NodeInfo) (filteredNodes []*v1.Node, podAnnotations *schedulerapi.Annotations, failedNodesMap schedulerapi.FailedNodesMap, err error)
+	Filter(pod *v1.Pod, nodes []*v1.Node, nodeNameToInfo map[string]*schedulercache.NodeInfo) (filteredNodes []*v1.Node, failedNodesMap schedulerapi.FailedNodesMap, podAnnotations *schedulerapi.Annotations, err error)
 
 	// Prioritize based on extender-implemented priority functions. The returned scores & weight
 	// are used to compute the weighted score for an extender. The weighted scores are added to
